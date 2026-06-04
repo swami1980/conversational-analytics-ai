@@ -1,15 +1,18 @@
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import bcrypt
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _hash(password: str) -> bytes:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
 
 # Demo users — in prod replace with corporate SSO / OIDC provider lookup
 USERS_DB = {
     "recruiter1": {
         "user_id": "USR-001",
         "username": "recruiter1",
-        "hashed_password": pwd_ctx.hash("password123"),
+        "hashed_password": _hash("password123"),
         "role": "recruiter",
         "full_name": "Priya Sharma",
         "email": "priya.sharma@amazon.com",
@@ -17,7 +20,7 @@ USERS_DB = {
     "hm_alice": {
         "user_id": "USR-002",
         "username": "hm_alice",
-        "hashed_password": pwd_ctx.hash("password123"),
+        "hashed_password": _hash("password123"),
         "role": "hiring_manager",
         "full_name": "Alice Johnson",
         "email": "alice.johnson@amazon.com",
@@ -26,7 +29,7 @@ USERS_DB = {
     "admin": {
         "user_id": "USR-003",
         "username": "admin",
-        "hashed_password": pwd_ctx.hash("admin123"),
+        "hashed_password": _hash("admin123"),
         "role": "admin",
         "full_name": "HR Admin",
         "email": "hr-admin@amazon.com",
@@ -34,7 +37,7 @@ USERS_DB = {
     "recruiter2": {
         "user_id": "USR-004",
         "username": "recruiter2",
-        "hashed_password": pwd_ctx.hash("password123"),
+        "hashed_password": _hash("password123"),
         "role": "recruiter",
         "full_name": "Marcus Thompson",
         "email": "marcus.thompson@amazon.com",
@@ -42,8 +45,8 @@ USERS_DB = {
 }
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_ctx.verify(plain, hashed)
+def verify_password(plain: str, hashed: bytes) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed)
 
 
 def authenticate_user(username: str, password: str) -> dict | None:
