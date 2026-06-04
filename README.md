@@ -2,7 +2,7 @@
 
 A production-faithful prototype of a multi-agent recruiting analytics assistant. Recruiters can ask natural-language questions about open reqs, candidate pipelines, headcount, and hiring metrics — the system reasons across 7 internal APIs in real time.
 
-[![LLM-as-Judge CI](https://github.com/YOUR_USERNAME/conversational-analytics-ai/actions/workflows/llm-judge.yml/badge.svg)](https://github.com/YOUR_USERNAME/conversational-analytics-ai/actions/workflows/llm-judge.yml)
+[![LLM-as-Judge CI](https://github.com/swami1980/conversational-analytics-ai/actions/workflows/llm-judge.yml/badge.svg)](https://github.com/swami1980/conversational-analytics-ai/actions/workflows/llm-judge.yml)
 
 ## Architecture
 
@@ -89,7 +89,7 @@ SSE stream → Browser (tool calls visible in real time)
 ## Quick Start (Docker — one command)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/conversational-analytics-ai
+git clone https://github.com/swami1980/conversational-analytics-ai
 cd conversational-analytics-ai
 cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
