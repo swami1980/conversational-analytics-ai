@@ -23,10 +23,11 @@ A production-faithful prototype of a multi-agent recruiting analytics assistant.
 │                                                                      │
 │  ┌─────────────────┐    ┌──────────────────────────────────────┐   │
 │  │  JWT Auth +     │    │        Strands Agent Orchestrator     │   │
-│  │  RBAC Middleware│───▶│        Strands Agent Orchestrator     │   │
+│  │  RBAC Middleware│───▶│         (Claude Sonnet 4.6)           │   │
 │  │  (3 roles)      │    │                                      │   │
 │  └─────────────────┘    │  1. search_knowledge_base            │   │
-│                          │     └─▶ ChromaDB (7 OpenAPI specs)  │   │
+│                          │     └─▶ TF-IDF Vector Store          │   │
+│                          │        (7 OpenAPI specs, in-memory)  │   │
 │                          │  2. call_api / call_apis_parallel    │   │
 │                          │     └─▶ 7 Mock REST APIs (internal) │   │
 │                          │  3. search/create GitHub Issues      │   │
@@ -63,14 +64,14 @@ User Query
     │
     ▼
 1. search_knowledge_base(query)
-   → ChromaDB similarity search over 7 OpenAPI specs
+   → TF-IDF cosine similarity search over 7 indexed OpenAPI specs
    → Returns: endpoint paths, parameters, descriptions
 
     │
     ▼
 2a. call_api(api, endpoint, params)          ← single-domain question
 2b. call_apis_parallel([call1, call2, ...])  ← cross-domain question
-
+                                               (asyncio.gather)
     │
     ▼
 3. Claude Sonnet (Summarizer)
@@ -136,20 +137,20 @@ npm run dev  # http://localhost:3000
 
 ## Key Design Decisions
 
-### API Agent + ChromaDB RAG
-The agent never hardcodes API endpoints. For every question it first calls `search_knowledge_base`, which performs a semantic search over the OpenAPI specs indexed in ChromaDB. The returned spec snippets tell the agent exactly which endpoint to call and what parameters to use. This ensures the agent always uses the correct endpoint, parameters, and schema without hardcoding any API details.
+### API Agent + TF-IDF Knowledge Base
+The agent never hardcodes API endpoints. For every question it first calls `search_knowledge_base`, which runs a TF-IDF cosine similarity search over the 7 OpenAPI specs indexed in memory at startup. The returned spec snippets tell the agent exactly which endpoint to call and what parameters to use — no guessing, no hardcoding.
+
+The knowledge base is built entirely in pure Python (numpy) with no native binary dependencies, making it compatible with any Python 3.11+ environment. In production this swaps to a managed vector store such as Amazon OpenSearch Serverless.
 
 ### Multi-API Parallel Orchestration
-Cross-domain questions (e.g., "health check for AWS: open reqs, pipeline, and time-to-hire") trigger `call_apis_parallel`, which uses `asyncio.gather` to fan out HTTP calls concurrently. A Strands orchestration callback emits each call as an SSE event, visible in the tool call transparency panel.
+Cross-domain questions (e.g., "health check for AWS: open reqs, pipeline, and time-to-hire") trigger `call_apis_parallel`, which uses `asyncio.gather` to fan out HTTP calls concurrently. A Strands callback emits each call as an SSE event, visible in the tool call transparency panel in real time.
 
 ### JWT + RBAC
-- `recruiter` / `admin`: see all data
-- `hiring_manager`: data is filtered to records matching their `employee_id` as `hiring_manager_id`
-
-Role-scoped data access: hiring managers see only their own records; recruiters and admins see everything.
+- `recruiter` / `admin`: see all data across all orgs
+- `hiring_manager`: data is automatically filtered to records matching their `employee_id`
 
 ### Session Memory
-SQLite stores conversation history per session. A 15-turn sliding window is enforced — older messages are pruned. In production this swaps to DynamoDB with TTL.
+SQLite stores conversation history per session with a 15-turn sliding window — older messages are pruned automatically. In production this swaps to DynamoDB with TTL.
 
 ### GitHub Issues MCP
 When the agent encounters data anomalies or errors, it can search known issues or file new ones. Currently stubbed with realistic in-memory responses. Set `GITHUB_TOKEN` and `GITHUB_REPO` in `.env` to enable real integration.
@@ -159,12 +160,12 @@ When the agent encounters data anomalies or errors, it can search known issues o
 | Component | Prototype | AWS Production |
 |---|---|---|
 | Orchestrator | Strands Agents SDK (Anthropic API) | Strands Agents SDK (Amazon Bedrock) |
-| Knowledge Base | ChromaDB (local PersistentClient) | Amazon OpenSearch Serverless |
+| Knowledge Base | TF-IDF vector store (numpy, in-memory) | Amazon OpenSearch Serverless |
 | Session Memory | SQLite (file) | Amazon DynamoDB (TTL-enabled) |
-| Auth | JWT (HS256, local secret) | Amazon Cognito + corporate SSO (Midway) |
+| Auth | JWT (HS256, local secret) | Amazon Cognito + corporate SSO |
 | Auth scopes | RBAC middleware | Amazon Verified Permissions |
 | Mock APIs | FastAPI routers (same process) | Microservices on Amazon ECS / Lambda |
-| MCP | GitHub Issues stub | Internal SIM (System Issue Management) MCP |
+| MCP | GitHub Issues stub | Issue tracking MCP (real integration) |
 | CI/CD | GitHub Actions | Amazon CodePipeline + CodeBuild |
 | Hosting | Docker Compose (local) | Amazon ECS Fargate + CloudFront |
 
@@ -175,10 +176,10 @@ When the agent encounters data anomalies or errors, it can search known issues o
 │   └── app/
 │       ├── main.py              # FastAPI app, lifespan startup
 │       ├── config.py            # Pydantic settings from .env
-│       ├── seed_data/           # Amazon-style data generator (seed 42)
+│       ├── seed_data/           # Realistic data generator (seed 42)
 │       ├── mock_apis/           # 7 FastAPI routers (internal endpoints)
-│       ├── openapi_specs/       # 7 YAML specs indexed into ChromaDB
-│       ├── knowledge_base/      # ChromaDB indexing + search
+│       ├── openapi_specs/       # 7 YAML specs indexed at startup
+│       ├── knowledge_base/      # TF-IDF vector store (numpy)
 │       ├── memory/              # SQLite 15-turn session store
 │       ├── auth/                # JWT handler + RBAC middleware
 │       ├── mcp/                 # GitHub Issues stub
