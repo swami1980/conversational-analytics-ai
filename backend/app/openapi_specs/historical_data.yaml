@@ -1,0 +1,95 @@
+openapi: "3.0.3"
+info:
+  title: Historical Data API
+  description: |
+    Quarterly historical headcount and hiring velocity data by org. Use this API
+    to answer questions about headcount growth trends, hiring plan attainment,
+    attrition patterns over time, and period-over-period comparisons. Covers
+    Q1 2024 through Q4 2025 for all 8 Amazon orgs.
+  version: "1.0.0"
+servers:
+  - url: /internal/v1/historical-data
+paths:
+  /:
+    get:
+      operationId: listHistoricalData
+      summary: List raw historical records
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string }
+          description: "e.g. 'Q1 2025'"
+        - name: org
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 200 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Historical records sorted by period then org
+  /headcount-trend:
+    get:
+      operationId: headcountTrend
+      summary: Headcount trend over all periods
+      description: |
+        Returns ending headcount, new hires, and attrition for each period in
+        chronological order. Optionally filter by org. Useful for growth trajectory
+        and workforce planning questions.
+      parameters:
+        - name: org
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Headcount trend by period
+  /hiring-velocity:
+    get:
+      operationId: hiringVelocity
+      summary: Hiring velocity vs plan by period
+      description: |
+        Returns total_hires, hiring_plan, and plan_attainment (ratio) for each
+        period. Shows whether hiring is tracking ahead or behind plan.
+        Optionally filter by org.
+      parameters:
+        - name: org
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Hiring velocity vs plan trend
+  /attrition-trend:
+    get:
+      operationId: attritionTrend
+      summary: Attrition count and rate trend over time
+      description: |
+        Returns attrition_count, headcount, and attrition_rate per period.
+        Useful for identifying org-level attrition spikes or improvements.
+      parameters:
+        - name: org
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Attrition trend by period
+components:
+  schemas:
+    HistoricalRecord:
+      type: object
+      properties:
+        history_id: { type: string }
+        period: { type: string }
+        org: { type: string }
+        headcount_start: { type: integer }
+        headcount_end: { type: integer }
+        new_hires: { type: integer }
+        attrition_count: { type: integer }
+        attrition_rate: { type: number }
+        promotions: { type: integer }
+        transfers_in: { type: integer }
+        transfers_out: { type: integer }
+        hiring_plan: { type: integer }
+        plan_attainment: { type: number }

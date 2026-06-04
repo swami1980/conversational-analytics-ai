@@ -1,0 +1,106 @@
+openapi: "3.0.3"
+info:
+  title: Interview Metrics API
+  description: |
+    Pre-aggregated hiring funnel metrics by org, job family, and quarter.
+    Use this API to answer questions about time-to-hire, offer acceptance rates,
+    interview-to-offer conversion, overall funnel health, and period-over-period trends.
+    Periods are formatted as 'Q1 2025', 'Q2 2025', etc. covering Q1 2024–Q4 2025.
+  version: "1.0.0"
+servers:
+  - url: /internal/v1/interview-metrics
+paths:
+  /:
+    get:
+      operationId: listMetrics
+      summary: List raw metrics records
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string }
+          description: "e.g. 'Q1 2025', 'Q4 2024'"
+        - name: org
+          in: query
+          schema: { type: string }
+        - name: job_family
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 200 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Raw metrics records
+  /time-to-hire/by-job-family:
+    get:
+      operationId: timeToHireByJobFamily
+      summary: Average time-to-hire in days, grouped by job family
+      description: |
+        Aggregates avg_time_to_hire_days across records, grouped by job_family.
+        Optionally filter by period and org.
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string }
+        - name: org
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Time-to-hire by job family
+  /offer-acceptance/trend:
+    get:
+      operationId: offerAcceptanceTrend
+      summary: Offer acceptance rate trend across all periods
+      description: |
+        Returns avg_offer_acceptance_rate, total_offers, and total_hires per period
+        sorted chronologically. Optionally filter by org and job_family.
+      parameters:
+        - name: org
+          in: query
+          schema: { type: string }
+        - name: job_family
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Offer acceptance trend by period
+  /conversion-funnel:
+    get:
+      operationId: conversionFunnel
+      summary: End-to-end interview-to-hire conversion funnel
+      description: |
+        Aggregates total screens, onsites, offers, and hires. Returns funnel volumes
+        and conversion rates at each stage: screen-to-onsite, onsite-to-offer,
+        offer-to-hire, and overall (screen-to-hire). Optionally filter by period and org.
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string }
+        - name: org
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Conversion funnel with rates at each stage
+components:
+  schemas:
+    InterviewMetric:
+      type: object
+      properties:
+        metric_id: { type: string }
+        period: { type: string }
+        org: { type: string }
+        job_family: { type: string }
+        avg_time_to_hire_days: { type: integer }
+        avg_interviews_per_hire: { type: number }
+        conversion_rate_screen_to_onsite: { type: number }
+        conversion_rate_onsite_to_offer: { type: number }
+        offer_acceptance_rate: { type: number }
+        total_screens: { type: integer }
+        total_onsites: { type: integer }
+        total_offers: { type: integer }
+        total_hires: { type: integer }

@@ -1,0 +1,93 @@
+name: LLM-as-Judge CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  llm-judge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Create .env for CI
+        run: |
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" > .env
+          echo "JWT_SECRET_KEY=ci-test-secret-key-not-for-prod" >> .env
+          echo "CHROMA_PERSIST_DIR=./chroma_db" >> .env
+          echo "SQLITE_DB_PATH=./recruiting.db" >> .env
+          echo "MOCK_API_BASE_URL=http://localhost:8000" >> .env
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          echo "Waiting for backend to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then
+              echo "Backend is up"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Install judge dependencies
+        run: pip install httpx anthropic
+
+      - name: Run LLM judge
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python judge/run_judge.py --base-url http://localhost:8000 --fail-threshold 0.80
+
+      - name: Upload judge results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-judge-results
+          path: judge/results.json
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const results = JSON.parse(fs.readFileSync('judge/results.json', 'utf8'));
+              const emoji = results.ci_pass ? '✅' : '❌';
+              const body = `## ${emoji} LLM Judge Results\n\n` +
+                `**Pass rate:** ${results.passed}/${results.total} (${(results.pass_rate * 100).toFixed(1)}%)\n` +
+                `**Threshold:** ${(results.threshold * 100).toFixed(0)}%\n\n` +
+                `| ID | Category | C | RF | G | Verdict |\n` +
+                `|---|---|---|---|---|---|\n` +
+                results.results.map(r =>
+                  `| ${r.id} | ${r.category} | ${r.correctness} | ${r.recruiter_friendly} | ${r.groundedness} | ${r.verdict === 'pass' ? '✓' : '✗'} |`
+                ).join('\n');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } catch (e) {
+              console.log('Could not post results:', e.message);
+            }

@@ -1,0 +1,140 @@
+openapi: "3.0.3"
+info:
+  title: Requisitions API
+  description: |
+    Manages job requisitions across all Amazon orgs. A requisition (req) represents
+    an approved headcount slot for a specific role. Use this API to query open/closed
+    reqs, filter by org/team/job family/level/location, identify at-risk reqs, and
+    get headcount summaries by org.
+  version: "1.0.0"
+
+servers:
+  - url: /internal/v1/requisitions
+
+paths:
+  /:
+    get:
+      operationId: listRequisitions
+      summary: List and filter job requisitions
+      description: |
+        Returns a paginated list of requisitions. Supports filtering by status
+        (Open/Closed/On Hold), job_family (SDE/SDM/TPM/SDET/Data Engineer/
+        Applied Scientist/Research Scientist/Solutions Architect/DevOps Engineer),
+        level (L4/L5/L6/L7), location (Seattle/NYC/Austin/San Francisco/London/
+        Bangalore/Vancouver/Berlin/Tokyo), org, team, hiring_manager_id,
+        recruiter_id, and days_open_gt.
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [Open, Closed, "On Hold"] }
+        - name: job_family
+          in: query
+          schema: { type: string }
+          description: SDE, SDM, TPM, SDET, Data Engineer, Applied Scientist, Research Scientist, Solutions Architect, DevOps Engineer
+        - name: level
+          in: query
+          schema: { type: string, enum: [L4, L5, L6, L7] }
+        - name: location
+          in: query
+          schema: { type: string }
+          description: Seattle, NYC, Austin, San Francisco, London, Bangalore, Vancouver, Berlin, Tokyo
+        - name: org
+          in: query
+          schema: { type: string }
+          description: "AWS, Amazon Advertising, Alexa & Echo, Prime Video, Kindle, Amazon Logistics, Amazon Healthcare, Amazon Fresh"
+        - name: team
+          in: query
+          schema: { type: string }
+        - name: hiring_manager_id
+          in: query
+          schema: { type: string }
+        - name: recruiter_id
+          in: query
+          schema: { type: string }
+        - name: days_open_gt
+          in: query
+          schema: { type: integer }
+          description: Return only reqs open longer than this many days
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Paginated list of requisitions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Requisition" }
+
+  /{req_id}:
+    get:
+      operationId: getRequisition
+      summary: Get a single requisition by ID
+      parameters:
+        - name: req_id
+          in: path
+          required: true
+          schema: { type: string }
+          description: "Format: REQ-NNNN"
+      responses:
+        "200":
+          description: Requisition detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Requisition" }
+
+  /summary/by-org:
+    get:
+      operationId: reqSummaryByOrg
+      summary: Headcount and status summary grouped by org
+      description: Returns count of Open/Closed/On Hold reqs and total headcount per org
+      responses:
+        "200":
+          description: Org-level requisition summary
+
+  /summary/at-risk:
+    get:
+      operationId: atRiskReqs
+      summary: Reqs at risk of missing target start date
+      description: |
+        Returns Open reqs where the target_start_date is within 30 days but
+        the req has been open longer than days_threshold (default 60 days).
+        Risk level is High if <14 days to target, Medium otherwise.
+      parameters:
+        - name: days_threshold
+          in: query
+          schema: { type: integer, default: 60 }
+      responses:
+        "200":
+          description: At-risk requisitions with risk_level field
+
+components:
+  schemas:
+    Requisition:
+      type: object
+      properties:
+        req_id: { type: string, example: "REQ-0001" }
+        title: { type: string }
+        job_family: { type: string }
+        level: { type: string }
+        location: { type: string }
+        org: { type: string }
+        team: { type: string }
+        status: { type: string, enum: [Open, Closed, "On Hold"] }
+        headcount: { type: integer }
+        recruiter_id: { type: string }
+        recruiter_name: { type: string }
+        hiring_manager_id: { type: string }
+        hiring_manager_name: { type: string }
+        target_start_date: { type: string, format: date }
+        created_date: { type: string, format: date }
+        days_open: { type: integer }
+        bar_raiser_required: { type: boolean }

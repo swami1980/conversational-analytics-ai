@@ -1,0 +1,119 @@
+openapi: "3.0.3"
+info:
+  title: Interview Events API
+  description: |
+    Individual interview sessions tied to candidates and requisitions. Event types
+    include Phone Screen, Bar Raiser, Virtual Onsite, and Loop. Outcomes are
+    Passed/Failed/Pending/No Show. Use this API to find scheduled interviews,
+    Bar Raiser sessions, overdue feedback, and interview calendars by org or
+    job family.
+  version: "1.0.0"
+servers:
+  - url: /internal/v1/interview-events
+paths:
+  /:
+    get:
+      operationId: listInterviewEvents
+      summary: List interview events with filters
+      parameters:
+        - name: candidate_id
+          in: query
+          schema: { type: string }
+        - name: req_id
+          in: query
+          schema: { type: string }
+        - name: event_type
+          in: query
+          schema: { type: string, enum: ["Phone Screen", "Bar Raiser", "Virtual Onsite", "Loop"] }
+        - name: outcome
+          in: query
+          schema: { type: string, enum: [Passed, Failed, Pending, "No Show"] }
+        - name: org
+          in: query
+          schema: { type: string }
+        - name: job_family
+          in: query
+          schema: { type: string }
+        - name: interviewer_id
+          in: query
+          schema: { type: string }
+        - name: scheduled_after
+          in: query
+          schema: { type: string, format: date }
+        - name: scheduled_before
+          in: query
+          schema: { type: string, format: date }
+        - name: is_bar_raiser_session
+          in: query
+          schema: { type: boolean }
+        - name: feedback_submitted
+          in: query
+          schema: { type: boolean }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Sorted list of interview events (ascending by scheduled_date)
+  /bar-raiser/schedule:
+    get:
+      operationId: barRaiserSchedule
+      summary: Upcoming Bar Raiser interview schedule
+      description: |
+        Returns pending Bar Raiser sessions within a date range.
+        Defaults to next 14 days if no range provided.
+      parameters:
+        - name: scheduled_after
+          in: query
+          schema: { type: string, format: date }
+        - name: scheduled_before
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Bar Raiser schedule with date range metadata
+  /feedback/missing:
+    get:
+      operationId: missingFeedback
+      summary: Past interviews with missing feedback
+      description: |
+        Returns completed interviews (scheduled_date in the past, outcome != Pending)
+        where feedback has not been submitted. Useful for SLA compliance tracking.
+      responses:
+        "200":
+          description: Interviews with missing feedback
+  /{event_id}:
+    get:
+      operationId: getInterviewEvent
+      summary: Get a single interview event by ID
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string }
+          description: "Format: EVT-NNNN"
+      responses:
+        "200":
+          description: Interview event detail
+components:
+  schemas:
+    InterviewEvent:
+      type: object
+      properties:
+        event_id: { type: string }
+        candidate_id: { type: string }
+        req_id: { type: string }
+        candidate_name: { type: string }
+        event_type: { type: string }
+        interviewer_id: { type: string }
+        interviewer_name: { type: string }
+        scheduled_date: { type: string, format: date }
+        duration_minutes: { type: integer }
+        outcome: { type: string }
+        feedback_submitted: { type: boolean }
+        is_bar_raiser_session: { type: boolean }
+        org: { type: string }
+        job_family: { type: string }

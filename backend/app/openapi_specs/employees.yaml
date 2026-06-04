@@ -1,0 +1,105 @@
+openapi: "3.0.3"
+info:
+  title: Employees API
+  description: |
+    Current employee roster for all Amazon orgs. Contains headcount, tenure,
+    org/team/level breakdown, and attrition data. Use this API to answer questions
+    about current workforce composition, team sizes, attrition rates, and to
+    look up specific employees or managers.
+  version: "1.0.0"
+servers:
+  - url: /internal/v1/employees
+paths:
+  /:
+    get:
+      operationId: listEmployees
+      summary: List and filter employees
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [Active, Departed] }
+        - name: org
+          in: query
+          schema: { type: string }
+        - name: team
+          in: query
+          schema: { type: string }
+        - name: job_family
+          in: query
+          schema: { type: string }
+        - name: level
+          in: query
+          schema: { type: string }
+        - name: location
+          in: query
+          schema: { type: string }
+        - name: manager_id
+          in: query
+          schema: { type: string }
+        - name: tenure_lt
+          in: query
+          schema: { type: number }
+          description: Tenure less than N years
+        - name: tenure_gt
+          in: query
+          schema: { type: number }
+          description: Tenure greater than N years
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Paginated list of employees
+  /headcount/by-org:
+    get:
+      operationId: headcountByOrg
+      summary: Active headcount breakdown by org, job family, level, and location
+      description: |
+        Aggregated view of current active employees. Returns total headcount per org
+        with breakdowns by job_family, level, and location.
+      responses:
+        "200":
+          description: Headcount summary by org
+  /attrition/summary:
+    get:
+      operationId: attritionSummary
+      summary: Attrition summary by org and departure reason
+      description: |
+        Returns total departed employees, overall attrition rate, breakdown by org,
+        and by departure reason (Resignation/Termination/Retirement/Transfer/Contract End).
+      responses:
+        "200":
+          description: Attrition summary
+  /{employee_id}:
+    get:
+      operationId: getEmployee
+      summary: Get a single employee by ID
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          schema: { type: string }
+          description: "Format: EMP-NNNN"
+      responses:
+        "200":
+          description: Employee detail
+components:
+  schemas:
+    Employee:
+      type: object
+      properties:
+        employee_id: { type: string }
+        name: { type: string }
+        job_family: { type: string }
+        level: { type: string }
+        location: { type: string }
+        org: { type: string }
+        team: { type: string }
+        manager_id: { type: string }
+        hire_date: { type: string, format: date }
+        tenure_years: { type: number }
+        status: { type: string, enum: [Active, Departed] }
+        departure_reason: { type: string, nullable: true }

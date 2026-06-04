@@ -1,0 +1,98 @@
+openapi: "3.0.3"
+info:
+  title: Pending Starts API
+  description: |
+    Tracks accepted candidates who have not yet started. A pending start is created
+    when a candidate accepts an offer and represents a future headcount addition.
+    Use this API to check upcoming starts, onboarding readiness (laptop/badge),
+    and to filter by start date, org, location, or status.
+  version: "1.0.0"
+servers:
+  - url: /internal/v1/pending-starts
+paths:
+  /:
+    get:
+      operationId: listPendingStarts
+      summary: List pending starts with filters
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [Confirmed, Pending, Deferred] }
+        - name: org
+          in: query
+          schema: { type: string }
+        - name: job_family
+          in: query
+          schema: { type: string }
+        - name: level
+          in: query
+          schema: { type: string }
+        - name: location
+          in: query
+          schema: { type: string }
+        - name: hiring_manager_id
+          in: query
+          schema: { type: string }
+        - name: start_before
+          in: query
+          schema: { type: string, format: date }
+          description: ISO date — filter starts before this date
+        - name: start_after
+          in: query
+          schema: { type: string, format: date }
+          description: ISO date — filter starts after this date
+        - name: laptop_provisioned
+          in: query
+          schema: { type: boolean }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Sorted list of pending starts (ascending by start_date)
+  /onboarding/readiness:
+    get:
+      operationId: onboardingReadiness
+      summary: Onboarding readiness check for starts within 30 days
+      description: |
+        Returns count of upcoming starts, how many are fully provisioned
+        (laptop + badge), and which ones are at risk due to missing provisioning.
+      responses:
+        "200":
+          description: Onboarding readiness summary
+  /{pending_start_id}:
+    get:
+      operationId: getPendingStart
+      summary: Get a single pending start by ID
+      parameters:
+        - name: pending_start_id
+          in: path
+          required: true
+          schema: { type: string }
+          description: "Format: PS-NNNN"
+      responses:
+        "200":
+          description: Pending start detail
+components:
+  schemas:
+    PendingStart:
+      type: object
+      properties:
+        pending_start_id: { type: string }
+        candidate_id: { type: string }
+        req_id: { type: string }
+        name: { type: string }
+        job_family: { type: string }
+        level: { type: string }
+        location: { type: string }
+        org: { type: string }
+        team: { type: string }
+        start_date: { type: string, format: date }
+        status: { type: string, enum: [Confirmed, Pending, Deferred] }
+        hiring_manager_id: { type: string }
+        hiring_manager_name: { type: string }
+        laptop_provisioned: { type: boolean }
+        badge_requested: { type: boolean }

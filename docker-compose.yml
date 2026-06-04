@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-prod}
+      - CHROMA_PERSIST_DIR=/app/chroma_db
+      - SQLITE_DB_PATH=/app/recruiting.db
+      - MOCK_API_BASE_URL=http://localhost:8000
+    volumes:
+      - chroma_data:/app/chroma_db
+      - sqlite_data:/app/recruiting.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+
+volumes:
+  chroma_data:
+  sqlite_data:

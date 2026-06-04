@@ -1,0 +1,177 @@
+[
+  {
+    "id": "Q01",
+    "question": "How many open requisitions do we currently have?",
+    "domain": "requisitions",
+    "expected_signals": ["number", "open", "requisition"],
+    "category": "basic_count"
+  },
+  {
+    "id": "Q02",
+    "question": "How many open SDE L5 requisitions are there in Seattle?",
+    "domain": "requisitions",
+    "expected_signals": ["SDE", "L5", "Seattle", "number"],
+    "category": "filtered_count"
+  },
+  {
+    "id": "Q03",
+    "question": "Which requisitions have been open the longest without a hire?",
+    "domain": "requisitions",
+    "expected_signals": ["days", "open", "requisition"],
+    "category": "time_analysis"
+  },
+  {
+    "id": "Q04",
+    "question": "Show me the headcount breakdown by org.",
+    "domain": "employees",
+    "expected_signals": ["org", "headcount", "count"],
+    "category": "aggregation"
+  },
+  {
+    "id": "Q05",
+    "question": "What is the overall attrition rate and which org has the highest?",
+    "domain": "employees",
+    "expected_signals": ["attrition", "rate", "percent"],
+    "category": "attrition"
+  },
+  {
+    "id": "Q06",
+    "question": "What is the current candidate pipeline breakdown by stage?",
+    "domain": "candidates",
+    "expected_signals": ["stage", "pipeline", "candidates", "count"],
+    "category": "pipeline_health"
+  },
+  {
+    "id": "Q07",
+    "question": "Which candidates are closest to receiving an offer right now?",
+    "domain": "candidates",
+    "expected_signals": ["offer", "onsite", "candidate"],
+    "category": "pipeline_near_offer"
+  },
+  {
+    "id": "Q08",
+    "question": "What is the sourcing mix for our current pipeline — internal vs external vs agency?",
+    "domain": "candidates",
+    "expected_signals": ["external", "internal", "agency", "source"],
+    "category": "sourcing"
+  },
+  {
+    "id": "Q09",
+    "question": "How many candidates do we have stuck in the pipeline for more than 60 days?",
+    "domain": "candidates",
+    "expected_signals": ["60", "days", "pipeline", "candidates"],
+    "category": "pipeline_health"
+  },
+  {
+    "id": "Q10",
+    "question": "Who is joining next month as a pending start?",
+    "domain": "pending_starts",
+    "expected_signals": ["start", "joining", "pending"],
+    "category": "pending_starts"
+  },
+  {
+    "id": "Q11",
+    "question": "Are there any onboarding risks — pending starts without a laptop or badge?",
+    "domain": "pending_starts",
+    "expected_signals": ["laptop", "badge", "onboarding", "risk"],
+    "category": "onboarding_risk"
+  },
+  {
+    "id": "Q12",
+    "question": "How many Bar Raiser interviews are scheduled in the next two weeks?",
+    "domain": "interview_events",
+    "expected_signals": ["Bar Raiser", "scheduled", "interview"],
+    "category": "interview_schedule"
+  },
+  {
+    "id": "Q13",
+    "question": "Which interviews are missing feedback from the interviewer?",
+    "domain": "interview_events",
+    "expected_signals": ["feedback", "missing", "interview"],
+    "category": "feedback_compliance"
+  },
+  {
+    "id": "Q14",
+    "question": "What is the average time-to-hire by job family?",
+    "domain": "interview_metrics",
+    "expected_signals": ["time-to-hire", "days", "job family"],
+    "category": "time_to_hire"
+  },
+  {
+    "id": "Q15",
+    "question": "What is the offer acceptance rate trend over the last four quarters?",
+    "domain": "interview_metrics",
+    "expected_signals": ["offer acceptance", "trend", "quarter", "rate"],
+    "category": "offer_acceptance"
+  },
+  {
+    "id": "Q16",
+    "question": "Show me the end-to-end interview funnel — screen to hire conversion rates.",
+    "domain": "interview_metrics",
+    "expected_signals": ["screen", "onsite", "offer", "hire", "conversion"],
+    "category": "funnel"
+  },
+  {
+    "id": "Q17",
+    "question": "What is the hiring velocity vs plan for AWS this year?",
+    "domain": "historical_data",
+    "expected_signals": ["AWS", "plan", "velocity", "attainment"],
+    "category": "hiring_velocity"
+  },
+  {
+    "id": "Q18",
+    "question": "Show me the headcount growth trend for Prime Video over the last 8 quarters.",
+    "domain": "historical_data",
+    "expected_signals": ["Prime Video", "headcount", "trend", "quarter"],
+    "category": "headcount_trend"
+  },
+  {
+    "id": "Q19",
+    "question": "Which org has been consistently below plan on hiring for the past two quarters?",
+    "domain": "historical_data",
+    "expected_signals": ["below plan", "org", "hiring", "quarter"],
+    "category": "plan_attainment"
+  },
+  {
+    "id": "Q20",
+    "question": "What is the attrition trend for Amazon Logistics over the past year?",
+    "domain": "historical_data",
+    "expected_signals": ["Amazon Logistics", "attrition", "trend"],
+    "category": "attrition_trend"
+  },
+  {
+    "id": "Q21",
+    "question": "Give me a full recruiting health check for AWS: open reqs, pipeline, and time-to-hire.",
+    "domain": "multi_api",
+    "expected_signals": ["open reqs", "pipeline", "time-to-hire", "AWS"],
+    "category": "cross_domain"
+  },
+  {
+    "id": "Q22",
+    "question": "How many SDET positions are open in Bangalore and who are the candidates in the pipeline?",
+    "domain": "multi_api",
+    "expected_signals": ["SDET", "Bangalore", "candidates", "open"],
+    "category": "cross_domain"
+  },
+  {
+    "id": "Q23",
+    "question": "Compare hiring plan attainment across all orgs for Q1 2025.",
+    "domain": "historical_data",
+    "expected_signals": ["Q1 2025", "plan attainment", "org"],
+    "category": "comparison"
+  },
+  {
+    "id": "Q24",
+    "question": "Which hiring managers have the most open requisitions right now?",
+    "domain": "requisitions",
+    "expected_signals": ["hiring manager", "open", "requisitions", "most"],
+    "category": "manager_load"
+  },
+  {
+    "id": "Q25",
+    "question": "What is the diversity breakdown by gender for candidates currently in the pipeline?",
+    "domain": "candidates",
+    "expected_signals": ["gender", "diversity", "pipeline", "candidates"],
+    "category": "diversity"
+  }
+]
