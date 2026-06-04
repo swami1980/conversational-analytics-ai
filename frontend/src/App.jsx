@@ -39,7 +39,7 @@ function Dashboard({ auth, onLogout }) {
           <span className="text-2xl">🤖</span>
           <div>
             <h1 className="text-white font-bold text-base leading-tight">Recruiting Analytics AI</h1>
-            <p className="text-slate-500 text-xs">Amazon internal · Strands SDK prototype</p>
+            <p className="text-slate-500 text-xs">Strands SDK · Multi-agent prototype</p>
           </div>
         </div>
         <div className="flex items-center gap-4">

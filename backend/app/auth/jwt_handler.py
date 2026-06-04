@@ -4,8 +4,7 @@ from passlib.context import CryptContext
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Demo users — mirrors mwinit/Bindle identity pattern
-# In prod: replace with corporate SSO (Midway) lookup
+# Demo users — in prod replace with corporate SSO / OIDC provider lookup
 USERS_DB = {
     "recruiter1": {
         "user_id": "USR-001",

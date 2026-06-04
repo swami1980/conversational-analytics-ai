@@ -1,6 +1,5 @@
 """
 GitHub Issues MCP — Stub implementation.
-Mirrors the SIM (System Issue Management) MCP used internally at Amazon.
 
 Phase 1: In-memory stub that logs calls and returns realistic fake responses.
 Phase 2 (next step): Replace with real GitHub API calls using GITHUB_TOKEN.

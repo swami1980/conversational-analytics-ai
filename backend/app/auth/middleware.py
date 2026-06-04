@@ -22,7 +22,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
 
 
 def require_role(*allowed_roles: str):
-    """Decorator factory — enforces role-based access (mirrors Bindle permission check)."""
+    """Decorator factory — enforces role-based access control."""
     def _check(user: dict = Depends(get_current_user)) -> dict:
         if user.get("role") not in allowed_roles:
             raise HTTPException(
@@ -37,7 +37,7 @@ def apply_rbac_filter(data: list[dict], user: dict, id_field: str = "hiring_mana
     """
     Hiring managers see only their own records.
     Recruiters and admins see everything.
-    Mirrors the Bindle-scoped data access pattern.
+    Role-scoped data access: hiring managers see only their own records.
     """
     if user.get("role") == "hiring_manager":
         emp_id = user.get("employee_id")

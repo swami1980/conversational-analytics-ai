@@ -150,7 +150,6 @@ def search_github_issues(query: str) -> str:
     Search GitHub Issues for known errors, bugs, or troubleshooting guides related
     to the recruiting analytics system. Use this when the user reports an error
     or when API calls return unexpected results.
-    (Mirrors the SIM MCP used internally at Amazon.)
 
     Args:
         query: Description of the error or issue to search for
@@ -167,7 +166,6 @@ def create_github_issue(title: str, body: str, labels: list[str] | None = None) 
     """
     Create a GitHub Issue to track a data anomaly, system error, or unexpected
     behavior discovered during a recruiting analytics session.
-    (Mirrors the SIM ticket creation MCP used internally at Amazon.)
 
     Args:
         title: Short, descriptive issue title (e.g. "API returns 0 candidates for open SDE L5 reqs")

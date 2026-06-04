@@ -46,7 +46,7 @@ export default function LoginModal({ onLogin }) {
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🤖</div>
           <h1 className="text-2xl font-bold text-white">Recruiting Analytics AI</h1>
-          <p className="text-slate-400 text-sm mt-1">Amazon internal prototype · Strands SDK</p>
+          <p className="text-slate-400 text-sm mt-1">Multi-agent prototype · Strands SDK</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 mb-6">

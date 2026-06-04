@@ -1,6 +1,6 @@
 # Conversational Recruiting Analytics AI
 
-A production-faithful prototype of a multi-agent recruiting analytics assistant, mirroring an internal system built at Amazon. Recruiters can ask natural-language questions about open reqs, candidate pipelines, headcount, and hiring metrics — the system reasons across 7 internal APIs in real time.
+A production-faithful prototype of a multi-agent recruiting analytics assistant. Recruiters can ask natural-language questions about open reqs, candidate pipelines, headcount, and hiring metrics — the system reasons across 7 internal APIs in real time.
 
 [![LLM-as-Judge CI](https://github.com/YOUR_USERNAME/conversational-analytics-ai/actions/workflows/llm-judge.yml/badge.svg)](https://github.com/YOUR_USERNAME/conversational-analytics-ai/actions/workflows/llm-judge.yml)
 
@@ -23,7 +23,7 @@ A production-faithful prototype of a multi-agent recruiting analytics assistant,
 │                                                                      │
 │  ┌─────────────────┐    ┌──────────────────────────────────────┐   │
 │  │  JWT Auth +     │    │        Strands Agent Orchestrator     │   │
-│  │  RBAC Middleware│───▶│  (mirrors mwinit + Bindle pattern)   │   │
+│  │  RBAC Middleware│───▶│        Strands Agent Orchestrator     │   │
 │  │  (3 roles)      │    │                                      │   │
 │  └─────────────────┘    │  1. search_knowledge_base            │   │
 │                          │     └─▶ ChromaDB (7 OpenAPI specs)  │   │
@@ -137,7 +137,7 @@ npm run dev  # http://localhost:3000
 ## Key Design Decisions
 
 ### API Agent + ChromaDB RAG
-The agent never hardcodes API endpoints. For every question it first calls `search_knowledge_base`, which performs a semantic search over the OpenAPI specs indexed in ChromaDB. The returned spec snippets tell the agent exactly which endpoint to call and what parameters to use. This mirrors how a human analyst would consult API documentation before querying a system.
+The agent never hardcodes API endpoints. For every question it first calls `search_knowledge_base`, which performs a semantic search over the OpenAPI specs indexed in ChromaDB. The returned spec snippets tell the agent exactly which endpoint to call and what parameters to use. This ensures the agent always uses the correct endpoint, parameters, and schema without hardcoding any API details.
 
 ### Multi-API Parallel Orchestration
 Cross-domain questions (e.g., "health check for AWS: open reqs, pipeline, and time-to-hire") trigger `call_apis_parallel`, which uses `asyncio.gather` to fan out HTTP calls concurrently. A Strands orchestration callback emits each call as an SSE event, visible in the tool call transparency panel.
@@ -146,7 +146,7 @@ Cross-domain questions (e.g., "health check for AWS: open reqs, pipeline, and ti
 - `recruiter` / `admin`: see all data
 - `hiring_manager`: data is filtered to records matching their `employee_id` as `hiring_manager_id`
 
-Mirrors the mwinit (authentication) + Bindle (authorization scopes) pattern used internally at Amazon.
+Role-scoped data access: hiring managers see only their own records; recruiters and admins see everything.
 
 ### Session Memory
 SQLite stores conversation history per session. A 15-turn sliding window is enforced — older messages are pruned. In production this swaps to DynamoDB with TTL.
@@ -162,7 +162,7 @@ When the agent encounters data anomalies or errors, it can search known issues o
 | Knowledge Base | ChromaDB (local PersistentClient) | Amazon OpenSearch Serverless |
 | Session Memory | SQLite (file) | Amazon DynamoDB (TTL-enabled) |
 | Auth | JWT (HS256, local secret) | Amazon Cognito + corporate SSO (Midway) |
-| Auth scopes | RBAC middleware | Amazon Verified Permissions (Bindle) |
+| Auth scopes | RBAC middleware | Amazon Verified Permissions |
 | Mock APIs | FastAPI routers (same process) | Microservices on Amazon ECS / Lambda |
 | MCP | GitHub Issues stub | Internal SIM (System Issue Management) MCP |
 | CI/CD | GitHub Actions | Amazon CodePipeline + CodeBuild |
