@@ -57,34 +57,74 @@ A production-faithful prototype of a multi-agent recruiting analytics assistant.
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Agent Reasoning Flow
+## End-to-End Request Flow
 
 ```
-User Query
-    │
-    ▼
-1. search_knowledge_base(query)
-   → TF-IDF cosine similarity search over 7 indexed OpenAPI specs
-   → Returns: endpoint paths, parameters, descriptions
-
-    │
-    ▼
-2a. call_api(api, endpoint, params)          ← single-domain question
-2b. call_apis_parallel([call1, call2, ...])  ← cross-domain question
-                                               (asyncio.gather)
-    │
-    ▼
-3. Claude Sonnet (Summarizer)
-   → Formats raw API response into recruiter-friendly markdown
-
-    │
-    ▼
-4. Claude Haiku (Follow-up suggestions)
-   → Generates 3 contextual follow-up questions from last 3 Q&A pairs
-
-    │
-    ▼
-SSE stream → Browser (tool calls visible in real time)
+User types question → hits Ask
+         │
+         ▼
+[Browser] POST /api/v1/chat/stream
+  • JWT token in Authorization header
+  • {session_id, message} in body
+         │
+         ▼
+[FastAPI Auth Middleware] — AuthN + AuthZ gate
+  • Verifies JWT signature and expiry                    ← Authentication
+  • Extracts: user_id, role (recruiter/hiring_manager/admin)
+  • Role check: only authenticated roles reach the agent  ← Authorization
+  • Attaches user context to request state
+  • 401 if token invalid → 403 if role not permitted
+         │
+         ▼
+[FastAPI] Session setup
+  • Loads last 15 turns from SQLite (conversation context)
+  • Opens SSE pipe back to browser
+  • Spins up Strands agent in background thread
+  • Passes role into agent system prompt context
+         │
+         ▼
+[Strands Agent] — Step 1: Knowledge Base Lookup
+  • Calls search_knowledge_base("open SDE L5 reqs Seattle")
+  • TF-IDF cosine search over 7 indexed OpenAPI specs
+  • Returns: endpoint path, parameters, description
+  ─── SSE event: tool_call ──────────────────────▶ Browser (Tool Panel)
+  ─── SSE event: tool_result ────────────────────▶ Browser (Tool Panel)
+         │
+         ▼
+[Strands Agent] — Step 2: API Call(s)
+  • Single domain → call_api(endpoint, params)
+  • Multi domain  → call_apis_parallel([...])  via asyncio.gather
+  • httpx hits /internal/v1/requisitions?job_family=SDE&level=L5&location=Seattle
+  ─── SSE event: tool_call ──────────────────────▶ Browser (Tool Panel)
+  ─── SSE event: tool_result ────────────────────▶ Browser (Tool Panel)
+         │
+         ▼
+[RBAC Data Filter] — Row-level permission enforcement  ← Authorization
+  • recruiter / admin  → full dataset returned as-is
+  • hiring_manager     → results filtered to rows where
+                         hiring_manager_id = user's employee_id
+  • Ensures a hiring manager never sees another manager's
+    candidates, reqs, or pipeline data
+         │
+         ▼
+[Claude Sonnet] — Summarizer pass
+  • Raw (already filtered) API JSON → recruiter-friendly markdown
+  • Bold numbers, tables, Key Takeaway line
+  ─── SSE event: final_answer ───────────────────▶ Browser (Chat Window)
+         │
+         ▼
+[SQLite] Message persisted
+  • User message + assistant response saved
+  • Window enforced: oldest turn dropped if > 15
+         │
+         ▼
+[Claude Haiku] — Follow-up suggestions
+  • Looks at last 3 Q&A pairs
+  • Generates 3 contextual next questions
+  ─── SSE event: follow_up_questions ────────────▶ Browser (Chips below answer)
+         │
+         ▼
+  ─── SSE event: done ───────────────────────────▶ Browser closes pipe
 ```
 
 ## Quick Start (Docker — one command)
