@@ -59,8 +59,8 @@ class StreamEvent:
 def _make_model() -> AnthropicModel:
     return AnthropicModel(
         model_id="claude-sonnet-4-6",
+        max_tokens=4096,
         client_args={"api_key": _settings.anthropic_api_key},
-        params={"max_tokens": 4096},
     )
 
 
