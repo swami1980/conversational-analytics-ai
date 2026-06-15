@@ -18,6 +18,7 @@ from app.mock_apis import (
 )
 from app.api.chat import router as chat_router
 from app.mcp.github_stub import get_issue_log
+from app.mcp_server import mcp
 
 settings = get_settings()
 
@@ -100,3 +101,7 @@ app.include_router(historical_data_router)
 
 # Chat (public-facing agent endpoint)
 app.include_router(chat_router)
+
+# MCP server — SSE transport at /mcp/sse
+# Claude Desktop / other MCP clients connect here
+app.mount("/mcp", mcp.sse_app())

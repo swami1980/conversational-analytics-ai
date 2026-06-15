@@ -20,16 +20,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - name: Install backend dependencies
         working-directory: backend
         run: pip install -r requirements.txt
 
       - name: Create .env for CI
+        working-directory: backend
         run: |
           echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" > .env
           echo "JWT_SECRET_KEY=ci-test-secret-key-not-for-prod" >> .env
@@ -40,15 +36,30 @@ jobs:
       - name: Start backend
         working-directory: backend
         run: |
-          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level info > /tmp/backend.log 2>&1 &
           echo "Waiting for backend to be ready..."
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8000/health; then
-              echo "Backend is up"
+              echo ""
+              echo "Backend is up after ${i} attempts"
               break
             fi
-            sleep 2
+            if [ $i -eq 30 ]; then
+              echo "Backend failed to start. Logs:"
+              cat /tmp/backend.log
+              exit 1
+            fi
+            sleep 3
           done
+
+      - name: Verify backend is serving data
+        run: |
+          TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/token \
+            -d "username=recruiter1&password=password123" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+          COUNT=$(curl -s "http://localhost:8000/internal/v1/requisitions?status=Open" \
+            -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['total'])")
+          echo "Open requisitions in seed data: $COUNT"
+          if [ "$COUNT" -lt 1 ]; then echo "Seed data missing"; exit 1; fi
 
       - name: Install judge dependencies
         run: pip install httpx anthropic
@@ -64,6 +75,10 @@ jobs:
         with:
           name: llm-judge-results
           path: judge/results.json
+
+      - name: Print backend logs on failure
+        if: failure()
+        run: cat /tmp/backend.log
 
       - name: Comment PR with results
         if: github.event_name == 'pull_request' && always()
