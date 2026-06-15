@@ -27,7 +27,7 @@ jobs:
       - name: Create .env for CI
         working-directory: backend
         run: |
-          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" > .env
+          echo "ANTHROPIC_API_KEY=${{ secrets.MY_GENAI_KEY }}" > .env
           echo "JWT_SECRET_KEY=ci-test-secret-key-not-for-prod" >> .env
           echo "CHROMA_PERSIST_DIR=./chroma_db" >> .env
           echo "SQLITE_DB_PATH=./recruiting.db" >> .env
@@ -66,7 +66,7 @@ jobs:
 
       - name: Run LLM judge
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.MY_GENAI_KEY }}
         run: python judge/run_judge.py --base-url http://localhost:8000 --fail-threshold 0.80
 
       - name: Upload judge results
