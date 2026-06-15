@@ -143,11 +143,11 @@ docker-compose up --build
 
 **Demo credentials:**
 
-| Username | Password | Role |
-|---|---|---|
-| `recruiter1` | `password123` | Recruiter (full view) |
-| `hm_alice` | `password123` | Hiring Manager (own reqs only) |
-| `admin` | `admin123` | Admin (full access) |
+| Username     | Password      | Role                           |
+| ------------ | ------------- | ------------------------------ |
+| `recruiter1` | `password123` | Recruiter (full view)          |
+| `hm_alice`   | `password123` | Hiring Manager (own reqs only) |
+| `admin`      | `admin123`    | Admin (full access)            |
 
 ## Local Development (no Docker)
 
@@ -177,37 +177,54 @@ npm run dev  # http://localhost:3000
 
 ## Key Design Decisions
 
+### Wiki Knowledge Base
+
+The knowledge base indexes two document types — OpenAPI specs
+(chunked per endpoint)
+and wiki pages (chunked per H2 section). This means the agent
+can answer both data
+questions ("how many open reqs?") and conceptual questions
+("what is a requisition?",
+"what does this app do?") from the same search. A balanced
+search ensures at least one
+result from each source type is always returned.
+
 ### API Agent + TF-IDF Knowledge Base
+
 The agent never hardcodes API endpoints. For every question it first calls `search_knowledge_base`, which runs a TF-IDF cosine similarity search over the 7 OpenAPI specs indexed in memory at startup. The returned spec snippets tell the agent exactly which endpoint to call and what parameters to use — no guessing, no hardcoding.
 
 The knowledge base is built entirely in pure Python (numpy) with no native binary dependencies, making it compatible with any Python 3.11+ environment. In production this swaps to a managed vector store such as Amazon OpenSearch Serverless.
 
 ### Multi-API Parallel Orchestration
+
 Cross-domain questions (e.g., "health check for AWS: open reqs, pipeline, and time-to-hire") trigger `call_apis_parallel`, which uses `asyncio.gather` to fan out HTTP calls concurrently. A Strands callback emits each call as an SSE event, visible in the tool call transparency panel in real time.
 
 ### JWT + RBAC
+
 - `recruiter` / `admin`: see all data across all orgs
 - `hiring_manager`: data is automatically filtered to records matching their `employee_id`
 
 ### Session Memory
+
 SQLite stores conversation history per session with a 15-turn sliding window — older messages are pruned automatically. In production this swaps to DynamoDB with TTL.
 
 ### GitHub Issues MCP
+
 When the agent encounters data anomalies or errors, it can search known issues or file new ones. Currently stubbed with realistic in-memory responses. Set `GITHUB_TOKEN` and `GITHUB_REPO` in `.env` to enable real integration.
 
 ## AWS Production Migration Path
 
-| Component | Prototype | AWS Production |
-|---|---|---|
-| Orchestrator | Strands Agents SDK (Anthropic API) | Strands Agents SDK (Amazon Bedrock) |
-| Knowledge Base | TF-IDF vector store (numpy, in-memory) | Amazon OpenSearch Serverless |
-| Session Memory | SQLite (file) | Amazon DynamoDB (TTL-enabled) |
-| Auth | JWT (HS256, local secret) | Amazon Cognito + corporate SSO |
-| Auth scopes | RBAC middleware | Amazon Verified Permissions |
-| Mock APIs | FastAPI routers (same process) | Microservices on Amazon ECS / Lambda |
-| MCP | GitHub Issues stub | Issue tracking MCP (real integration) |
-| CI/CD | GitHub Actions | Amazon CodePipeline + CodeBuild |
-| Hosting | Docker Compose (local) | Amazon ECS Fargate + CloudFront |
+| Component      | Prototype                              | AWS Production                        |
+| -------------- | -------------------------------------- | ------------------------------------- |
+| Orchestrator   | Strands Agents SDK (Anthropic API)     | Strands Agents SDK (Amazon Bedrock)   |
+| Knowledge Base | TF-IDF vector store (numpy, in-memory) | Amazon OpenSearch Serverless          |
+| Session Memory | SQLite (file)                          | Amazon DynamoDB (TTL-enabled)         |
+| Auth           | JWT (HS256, local secret)              | Amazon Cognito + corporate SSO        |
+| Auth scopes    | RBAC middleware                        | Amazon Verified Permissions           |
+| Mock APIs      | FastAPI routers (same process)         | Microservices on Amazon ECS / Lambda  |
+| MCP            | GitHub Issues stub                     | Issue tracking MCP (real integration) |
+| CI/CD          | GitHub Actions                         | Amazon CodePipeline + CodeBuild       |
+| Hosting        | Docker Compose (local)                 | Amazon ECS Fargate + CloudFront       |
 
 ## Repository Structure
 
@@ -227,6 +244,8 @@ When the agent encounters data anomalies or errors, it can search known issues o
 │           ├── tools.py         # @tool definitions for Strands
 │           ├── orchestrator.py  # Strands Agent + SSE streaming
 │           └── summarizer.py    # Claude Sonnet format + Haiku follow-up
+│       ├── wiki/                # Markdown pages: app
+|           |__overview, glossary, data guide
 ├── frontend/
 │   └── src/
 │       ├── App.jsx              # Root — auth gate + layout
