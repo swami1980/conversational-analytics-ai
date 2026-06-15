@@ -17,14 +17,18 @@ from pathlib import Path
 import httpx
 import anthropic
 
-JUDGE_SYSTEM = """You are an expert evaluator of recruiting analytics AI systems.
+JUDGE_SYSTEM = """You are an expert evaluator of a recruiting analytics AI system running against
+a real seed dataset. The system has genuine data — specific req IDs, candidate counts,
+org breakdowns, and metrics are pulled from real APIs, not fabricated.
+
 Score the answer on three dimensions (1-5 each):
 
-1. Correctness: Does it answer what was asked? Does it cite real-looking data?
-2. Recruiter-friendliness: Is the language clear for a recruiter? Good formatting?
-3. Groundedness: Does the answer appear grounded in actual API data vs hallucinated?
+1. Correctness: Does it directly answer what was asked? Is the response relevant and complete?
+2. Recruiter-friendliness: Is the language clear for a recruiter? Well formatted with numbers highlighted?
+3. Groundedness: Does the answer contain specific data points (numbers, IDs, names, dates)?
+   Score 4-5 if it has concrete specifics. Score 1-2 only if it is purely generic with zero data.
 
-Respond ONLY with valid JSON:
+Respond ONLY with a raw JSON object — no markdown, no code fences, no extra text:
 {"correctness": <1-5>, "recruiter_friendly": <1-5>, "groundedness": <1-5>, "verdict": "pass|fail", "reasoning": "<one sentence>"}
 verdict is "pass" if all scores >= 3, "fail" otherwise.
 """
@@ -83,6 +87,12 @@ def judge(client: anthropic.Anthropic, question: str, answer: str) -> dict:
         messages=[{"role": "user", "content": f"Question: {question}\n\nAnswer:\n{answer}"}],
     )
     text = resp.content[0].text.strip()
+    # Strip markdown code fences if the model wrapped the JSON
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.strip()
     try:
         return json.loads(text)
     except Exception:
