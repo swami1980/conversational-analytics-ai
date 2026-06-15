@@ -240,6 +240,30 @@ def generate_interview_events(candidates: list[dict], employees: list[dict], n: 
             "job_family": cand["job_family"],
         }
         events.append(evt)
+
+    # Guarantee at least 6 Bar Raiser sessions in the next 14 days
+    # so Q12 (BR schedule) always has data regardless of random seed
+    br_cands = [c for c in active_cands if c["job_family"] in ("SDE", "SDM", "Applied Scientist")]
+    for j in range(6):
+        cand = br_cands[j % len(br_cands)]
+        interviewer = active_emps[j % len(active_emps)]
+        scheduled = today + timedelta(days=j * 2 + 1)  # days 1,3,5,7,9,11
+        events.append({
+            "event_id": f"EVT-BR-{j+1:03d}",
+            "candidate_id": cand["candidate_id"],
+            "req_id": cand["req_id"],
+            "candidate_name": cand["name"],
+            "event_type": "Bar Raiser",
+            "interviewer_id": interviewer["employee_id"],
+            "interviewer_name": interviewer["name"],
+            "scheduled_date": scheduled.isoformat(),
+            "duration_minutes": 60,
+            "outcome": "Pending",
+            "feedback_submitted": False,
+            "is_bar_raiser_session": True,
+            "org": cand["org"],
+            "job_family": cand["job_family"],
+        })
     return events
 
 

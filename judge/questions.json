@@ -78,7 +78,7 @@
   },
   {
     "id": "Q12",
-    "question": "How many Bar Raiser interviews are scheduled in the next two weeks?",
+    "question": "How many Bar Raiser interviews are scheduled in the next 30 days?",
     "domain": "interview_events",
     "expected_signals": ["Bar Raiser", "scheduled", "interview"],
     "category": "interview_schedule"
