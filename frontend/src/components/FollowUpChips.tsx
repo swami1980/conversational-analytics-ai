@@ -1,5 +1,11 @@
-export default function FollowUpChips({ questions, onSelect, disabled }) {
-  if (!questions || questions.length === 0) return null
+interface Props {
+  questions: string[]
+  onSelect: (question: string) => void
+  disabled: boolean
+}
+
+export default function FollowUpChips({ questions, onSelect, disabled }: Props) {
+  if (questions.length === 0) return null
   return (
     <div className="px-4 py-3 border-t border-slate-800">
       <p className="text-xs text-slate-500 mb-2">Suggested follow-ups</p>

@@ -1,9 +1,19 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import type { Message as MessageType } from '../hooks/useChat'
 
-const ROLE_LABELS = { recruiter: 'Recruiter', hiring_manager: 'Hiring Mgr', admin: 'Admin' }
+interface Props {
+  msg: MessageType
+  userRole: string
+}
 
-export default function Message({ msg, userRole }) {
+const ROLE_LABELS: Record<string, string> = {
+  recruiter: 'Recruiter',
+  hiring_manager: 'Hiring Mgr',
+  admin: 'Admin',
+}
+
+export default function Message({ msg, userRole }: Props) {
   const isUser = msg.role === 'user'
   const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
@@ -13,7 +23,7 @@ export default function Message({ msg, userRole }) {
         <div className="max-w-[75%]">
           <div className="flex items-center justify-end gap-2 mb-1">
             <span className="text-xs text-slate-500">{time}</span>
-            <span className="text-xs text-amazon-orange font-medium">{ROLE_LABELS[userRole] || userRole}</span>
+            <span className="text-xs text-amazon-orange font-medium">{ROLE_LABELS[userRole] ?? userRole}</span>
           </div>
           <div className="bg-amazon-blue text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
             {msg.content}

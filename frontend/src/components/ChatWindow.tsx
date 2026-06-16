@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import Message from './Message'
 import FollowUpChips from './FollowUpChips'
+import type { Message as MessageType } from '../hooks/useChat'
 
-const STARTER_QUESTIONS = [
+interface Props {
+  messages: MessageType[]
+  followUps: string[]
+  isStreaming: boolean
+  statusMsg: string
+  onSend: (text: string) => void
+  userRole: string
+}
+
+const STARTER_QUESTIONS: string[] = [
   'How many open SDE L5 reqs do we have in Seattle?',
   'What is the offer acceptance rate trend for AWS in 2025?',
   'Which reqs are at risk of missing their target start date?',
@@ -11,9 +21,9 @@ const STARTER_QUESTIONS = [
   'What is the Bar Raiser interview schedule for the next two weeks?',
 ]
 
-export default function ChatWindow({ messages, followUps, isStreaming, statusMsg, onSend, userRole }) {
+export default function ChatWindow({ messages, followUps, isStreaming, statusMsg, onSend, userRole }: Props) {
   const [input, setInput] = useState('')
-  const bottomRef = useRef(null)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -25,7 +35,7 @@ export default function ChatWindow({ messages, followUps, isStreaming, statusMsg
     setInput('')
   }
 
-  function handleKey(e) {
+  function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()

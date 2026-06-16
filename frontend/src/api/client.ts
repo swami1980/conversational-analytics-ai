@@ -1,6 +1,11 @@
 const BASE = import.meta.env.VITE_API_BASE_URL || ''
 
-export async function login(username, password) {
+interface LoginResponse {
+  access_token: string
+  token_type: string
+}
+
+export async function login(username: string, password: string): Promise<LoginResponse> {
   const form = new URLSearchParams({ username, password })
   const res = await fetch(`${BASE}/api/v1/auth/token`, {
     method: 'POST',
@@ -11,33 +16,33 @@ export async function login(username, password) {
   return res.json()
 }
 
-export async function getSessions(token) {
+export async function getSessions(token: string): Promise<unknown> {
   const res = await fetch(`${BASE}/api/v1/chat/sessions`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   return res.json()
 }
 
-export async function getSessionHistory(token, sessionId) {
+export async function getSessionHistory(token: string, sessionId: string): Promise<unknown> {
   const res = await fetch(`${BASE}/api/v1/chat/sessions/${sessionId}/history`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   return res.json()
 }
 
-export async function deleteSession(token, sessionId) {
+export async function deleteSession(token: string, sessionId: string): Promise<void> {
   await fetch(`${BASE}/api/v1/chat/sessions/${sessionId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   })
 }
 
-/**
- * Opens an SSE stream for a chat message.
- * Calls onEvent(eventType, payload) for each SSE event.
- * Returns a cleanup function.
- */
-export function streamChat(token, sessionId, message, onEvent) {
+export function streamChat(
+  token: string,
+  sessionId: string,
+  message: string,
+  onEvent: (eventType: string, payload: unknown) => void
+): () => void {
   let cancelled = false
   ;(async () => {
     const res = await fetch(`${BASE}/api/v1/chat/stream`, {
@@ -52,6 +57,7 @@ export function streamChat(token, sessionId, message, onEvent) {
       onEvent('error', { message: `HTTP ${res.status}` })
       return
     }
+    if (!res.body) return
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
@@ -60,7 +66,7 @@ export function streamChat(token, sessionId, message, onEvent) {
       if (done) break
       buffer += decoder.decode(value, { stream: true })
       const parts = buffer.split('\n\n')
-      buffer = parts.pop()
+      buffer = parts.pop() ?? ''
       for (const part of parts) {
         const lines = part.split('\n')
         let eventType = 'message'

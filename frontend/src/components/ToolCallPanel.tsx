@@ -1,6 +1,17 @@
 import { useState } from 'react'
+import type { ToolEvent } from '../hooks/useChat'
 
-const TOOL_ICONS = {
+interface ToolCardProps {
+  event: ToolEvent
+}
+
+interface Props {
+  events: ToolEvent[]
+  statusMsg: string
+  isStreaming: boolean
+}
+
+const TOOL_ICONS: Record<string, string> = {
   search_knowledge_base: '🔍',
   call_api: '🌐',
   call_apis_parallel: '⚡',
@@ -8,7 +19,7 @@ const TOOL_ICONS = {
   create_github_issue: '📝',
 }
 
-const TOOL_COLORS = {
+const TOOL_COLORS: Record<string, string> = {
   search_knowledge_base: 'border-purple-600 bg-purple-900/20',
   call_api: 'border-blue-600 bg-blue-900/20',
   call_apis_parallel: 'border-yellow-500 bg-yellow-900/20',
@@ -16,11 +27,13 @@ const TOOL_COLORS = {
   create_github_issue: 'border-orange-500 bg-orange-900/20',
 }
 
-function ToolCallCard({ event }) {
+function ToolCallCard({ event }: ToolCardProps) {
   const [expanded, setExpanded] = useState(false)
-  const icon = TOOL_ICONS[event.tool_name] || '🔧'
-  const colorClass = TOOL_COLORS[event.tool_name] || 'border-slate-600 bg-slate-800'
+  const icon = TOOL_ICONS[event.tool_name] ?? '🔧'
+  const colorClass = TOOL_COLORS[event.tool_name] ?? 'border-slate-600 bg-slate-800'
   const isDone = event.type === 'done'
+  const toolInput = event.tool_input
+  const hasToolInput = toolInput !== null && typeof toolInput === 'object' && Object.keys(toolInput).length > 0
 
   return (
     <div className={`border rounded-lg p-3 mb-2 transition-all ${colorClass}`}>
@@ -41,11 +54,11 @@ function ToolCallCard({ event }) {
 
       {expanded && (
         <div className="mt-2 space-y-2">
-          {event.tool_input && Object.keys(event.tool_input).length > 0 && (
+          {hasToolInput && (
             <div>
               <p className="text-xs text-slate-500 mb-1 uppercase tracking-wide">Input</p>
               <pre className="text-xs text-slate-300 bg-black/40 rounded p-2 overflow-x-auto whitespace-pre-wrap break-words max-h-32">
-                {JSON.stringify(event.tool_input, null, 2)}
+                {JSON.stringify(toolInput as object, null, 2)}
               </pre>
             </div>
           )}
@@ -63,7 +76,7 @@ function ToolCallCard({ event }) {
   )
 }
 
-export default function ToolCallPanel({ events, statusMsg, isStreaming }) {
+export default function ToolCallPanel({ events, statusMsg, isStreaming }: Props) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (

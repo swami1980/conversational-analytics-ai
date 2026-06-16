@@ -1,25 +1,37 @@
 import { useState } from 'react'
 import { login } from '../api/client'
+import type { LoginData } from '../types'
 
-const DEMO_USERS = [
+interface DemoUser {
+  username: string
+  password: string
+  label: string
+  desc: string
+}
+
+interface Props {
+  onLogin: (data: LoginData) => void
+}
+
+const DEMO_USERS: DemoUser[] = [
   { username: 'recruiter1', password: 'password123', label: 'Recruiter', desc: 'Full pipeline view' },
   { username: 'hm_alice', password: 'password123', label: 'Hiring Manager', desc: 'Own reqs only' },
   { username: 'admin', password: 'admin123', label: 'Admin', desc: 'Full access' },
 ]
 
-export default function LoginModal({ onLogin }) {
+export default function LoginModal({ onLogin }: Props) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
       const data = await login(username, password)
-      onLogin(data)
+      onLogin(data as LoginData)
     } catch {
       setError('Invalid credentials. Try the demo accounts below.')
     } finally {
@@ -27,12 +39,12 @@ export default function LoginModal({ onLogin }) {
     }
   }
 
-  async function quickLogin(user) {
+  async function quickLogin(user: DemoUser) {
     setLoading(true)
     setError('')
     try {
       const data = await login(user.username, user.password)
-      onLogin(data)
+      onLogin(data as LoginData)
     } catch {
       setError('Backend not reachable. Start the server first.')
     } finally {

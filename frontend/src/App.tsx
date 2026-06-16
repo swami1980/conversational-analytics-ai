@@ -3,17 +3,31 @@ import LoginModal from './components/LoginModal'
 import ChatWindow from './components/ChatWindow'
 import ToolCallPanel from './components/ToolCallPanel'
 import { useChat } from './hooks/useChat'
+import type { LoginData } from './types'
 
-const ROLE_BADGE = {
+interface Auth {
+  token: string
+  user: {
+    role: string
+    full_name: string
+  }
+}
+
+interface DashboardProps {
+  auth: Auth
+  onLogout: () => void
+}
+
+const ROLE_BADGE: Record<string, { label: string; color: string }> = {
   recruiter: { label: 'Recruiter', color: 'bg-blue-700' },
   hiring_manager: { label: 'Hiring Mgr', color: 'bg-purple-700' },
   admin: { label: 'Admin', color: 'bg-red-700' },
 }
 
 export default function App() {
-  const [auth, setAuth] = useState(null)
+  const [auth, setAuth] = useState<Auth | null>(null)
 
-  function handleLogin(data) {
+  function handleLogin(data: LoginData) {
     setAuth({ token: data.access_token, user: data.user })
   }
 
@@ -26,10 +40,10 @@ export default function App() {
   return <Dashboard auth={auth} onLogout={handleLogout} />
 }
 
-function Dashboard({ auth, onLogout }) {
+function Dashboard({ auth, onLogout }: DashboardProps) {
   const { token, user } = auth
   const { messages, toolEvents, followUps, isStreaming, statusMsg, sendMessage, newSession } = useChat(token)
-  const badge = ROLE_BADGE[user.role] || { label: user.role, color: 'bg-slate-600' }
+  const badge = ROLE_BADGE[user.role] ?? { label: user.role, color: 'bg-slate-600' }
 
   return (
     <div className="flex flex-col h-screen bg-amazon-dark">
