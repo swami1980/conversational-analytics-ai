@@ -34,7 +34,6 @@ async def _stream_agent(
     session_id: str,
 ) -> AsyncGenerator[str, None]:
     event_queue: Queue = Queue()
-
     # Run the blocking Strands agent in a thread pool
     loop = asyncio.get_event_loop()
     agent_future = loop.run_in_executor(
